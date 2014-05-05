@@ -1,0 +1,15 @@
+20:21:39 **** Incremental Build of configuration Debug for project gen_poziomic ****
+make all 
+Building file: ../src/main.cpp
+Invoking: GCC C++ Compiler
+g++ -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/main.d" -MT"src/main.d" -o "src/main.o" "../src/main.cpp"
+Finished building: ../src/main.cpp
+ 
+Building target: gen_poziomic
+Invoking: GCC C++ Linker
+g++  -o "gen_poziomic"  ./src/main.o ./src/utils.o   -lboost_system -lboost_filesystem
+Finished building target: gen_poziomic
+ 
+
+20:21:41 Build Finished (took 1s.491ms)
+

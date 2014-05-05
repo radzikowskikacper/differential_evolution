@@ -1,0 +1,90 @@
+#include "../header/utils.hpp"
+#include <cfloat>
+#include <exception>
+
+
+
+void utils::help()
+{
+	std::cout<<"Uruchomienie programu:\n"
+			"nazwa_prog x y interwał nazwa_pliku\n"
+			"x - ilosc pktów w poziomie\n"
+			"y - ilość pktów w pionie\n"
+			"interwał - przedział poziomic\n"
+			"nazwa_pliku - nazwa  tworzonego pliku\n";
+}
+
+double utils::goldstein(double x, double y)
+{
+	return (1+(x+y+1)*(x+y+1)*(19-14*x+3*x*x-14*y+6*x*y+3*y*y)) *
+			(30+(2*x-3*y)*(2*x-3*y)*(18-32*x+12*x*x+48*y-36*x*y+27*y*y));
+}
+
+
+
+bitmap_image* utils::generatePointsToBmp(int points_per_unit,
+		double (*fun_calc)(double x, double y),
+		double x_left, double x_right,
+		double y_top, double y_bottom,
+		int count_isometric , int percent_isometric_drawing)
+{
+	if (points_per_unit < 1)
+		throw MyException("Niepoprawna wartość points_per_unit");
+	if (percent_isometric_drawing > 100 || percent_isometric_drawing < 0)
+		throw MyException("Niepoprawna wartość percent_isometric_drawing - dozwolone [0;100]");
+	if (count_isometric < 0)
+		throw MyException("Niepoprawna wartość count_isometric - musi być nieujemna");
+	if (x_left >= x_right)
+		throw MyException("zły przedział x");
+	if (y_top <= y_bottom)
+		throw MyException("zły przedział y");
+
+
+	int width = points_per_unit * (x_right - x_left);
+	int height = points_per_unit * (y_top - y_bottom);
+	bitmap_image* image = new bitmap_image(width,height);
+	image->clear(0xffff); // ustaw biały kolor
+
+	double *table[width];
+
+	for (int i=0;i<width;++i)
+		table[i] = new double[height];
+
+	double min = DBL_MAX;
+	double max = DBL_MIN;
+
+	double step = 1.0 / points_per_unit;
+
+
+	double x_value = x_left;
+	double y_value = y_bottom;
+
+	for (int x=0; x<width; ++x )
+	{
+		y_value = y_bottom;
+		for(int y=0; y<height; ++y)
+		{
+			table[x][y] = fun_calc(x_value,y_value);
+
+			if (min > table[x][y])
+				min = table[x][y];
+			if (max < table[x][y])
+				max = table[x][y];
+
+			y_value += step;
+		}
+		x_value += step;
+	}
+	std::cout << "min: " << min << "\nmax: " << max << "\n";
+	// make isometrics
+
+	double value_interval = max - min; // rozpiętość przedziału wyniku
+	//double top_limes =
+
+
+	// end - delete this table
+	for (int i=0;i<width;++i)
+		delete [] table[i];
+
+	return image;
+}

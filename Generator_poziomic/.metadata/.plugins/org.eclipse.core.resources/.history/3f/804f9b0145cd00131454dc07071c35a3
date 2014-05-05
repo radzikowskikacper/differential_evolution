@@ -1,0 +1,22 @@
+/*
+ * utils.hpp
+ *
+ *  Created on: 25 kwi 2014
+ *      Author: michal
+ */
+
+#include <iostream>
+#include "../header/bitmap_image.hpp"
+
+
+namespace utils
+{
+
+void help();
+
+bitmap_image* generatePointsToBmp(int points_per_unit,
+		double x_left, double x_right,
+		double y_left, double y_right,
+		int count_isometric , int percent_isometric_drawing);
+
+}

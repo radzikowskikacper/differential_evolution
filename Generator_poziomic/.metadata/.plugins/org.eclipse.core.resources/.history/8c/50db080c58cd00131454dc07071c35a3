@@ -1,0 +1,54 @@
+/*
+ * main.cpp
+ *
+ *  Created on: 25 kwi 2014
+ *      Author: michal
+ */
+
+#include "../header/utils.hpp"
+#include "../header/bitmap_image.hpp"
+/**
+ * wywołanie
+ * nazwa [punkty na jednostke] [ilosc poziomic] [ilosc procentowa rysowanych poziomic z podanych] [nazwa_pliku]
+ */
+int main(int argc, char* argv[])
+{
+	if (argc != 5)
+	{
+		std::cerr<<"Niepoprawna ilość argumentów\n";
+		utils::help();
+		return -1;
+	}
+
+
+
+	// for test
+	std::string file_name = "plik.bmp";
+	int points_per_unit = 500;
+	//int przedzial = 5;
+	//int interwal = 20;
+	std::cout<< "test\n f(0,-1)= "<< utils::goldstein(0.0, -1.0) <<"\n";
+	bitmap_image *image;
+
+	try{
+
+	image = utils::generatePointsToBmp(points_per_unit,
+			&(utils::goldstein),
+			-2.0, 2.0,
+			2.0, -2.0,
+			30 , 100);
+	}
+	catch ( MyException& e) {
+		std::cerr<< e.what();
+		exit(-1);
+	}
+    image->save_image(file_name);
+
+
+
+	//end for test
+	return 0;
+}
+
+
+
