@@ -19,6 +19,7 @@ setParamDE<-function(S,F,CR)
   parametersDE <<- (list(S = S, F = F, CR = CR))
 }
 
+
 # tworzy punkt o współrzędnych x, y
 # dla n wymiarów wymaga małego uproszczenia i by działało , do przedyskutowania
 # wtedy zmiana metod odwołań (nie przez nazwe ale w pętlach przez numer)
