@@ -11,7 +11,10 @@
 # notka wyciagamy z listy poprzez _lista[[nr]] !!
 # przypisania globalne poprzez <<- zamiast <- lub = !!
 # parametry algorytmu ewolucyjnego i metoda ustawiająca
-parametersDE = list(S = 10, F = 0.4, CR = 0.5)
+
+# history - wszystkie wygenerowane punkty
+# model - indeksy punktów aktualnego 
+parametersDE = list(S = 10, F = 0.9, CR = 0.5)
 
 # ustawia parametry metody
 setParamDE<-function(S,F,CR)
@@ -41,6 +44,21 @@ evaluation<-function(coordinates)
   return((1+(x1+x2+1)^2*(19-14*x1+3*x1^2-14*x2+6*x1*x2+3*x2^2))*(30+(2*x1-3*x2)^2*(18-32*x1+12*x1^2+48*x2-36*x1*x2+27*x2^2)))
 }
 
+# metoda wyswietlająca wunik w przyjazny sposób
+show_output<-function(out)
+{
+  a = NULL
+  b = NULL
+  c = NULL
+  for (i in 1:length(out))
+  {
+    a[i] = out[[i]]$coordinates[1]
+    b[i] = out[[i]]$coordinates[2]
+    c[i] = out[[i]]$quality
+  }
+  plot(a,b)
+}
+
 # inicjalizacja wybiera n elementów z listy startowej punktów,
 # jesli lista pusta lub brakuje elementow, to
 # zostaną elemnety dogenerowane. W ten sposób pozwala
@@ -64,14 +82,14 @@ initialization<-function(startPoints)
 }
 
 # termination with values
-parametersTerm = list (type='repeats',value=100000, currValue = 0)
+parametersTerm = list (type='repeats',value=1000, currValue = 0)
 
 termination<-function(history,model)
-{
-  if (parametersTerm$type == "repeats")
+{# wyłączenie spr. warunku
+  #if (parametersTerm$type == "repeats")
   {
     parametersTerm$currValue <<- parametersTerm$currValue + 1
-    if (parametersTerm$currValue >= parametersTerm$value)
+    if (parametersTerm$currValue > parametersTerm$value)
       return (TRUE)
   }
   
@@ -79,7 +97,7 @@ termination<-function(history,model)
 }
 
 # zwraca wylosowany (w ust sposób) wektor współrzędnych danego punktu
-selectDE<-function(selectedPoints, model)
+selectDE<-function(selectedPoints)
 {
   # na razie zwykłe sample ale może pożniej inaczej
   l = sample(1:length(selectedPoints),1)
@@ -100,30 +118,41 @@ crossoverDE<-function(old,y)
     new[order[1]] = y[order[1]]
   }
   new[order[2]] = y[order[2]]
-  return (new)
+  return (point(new))
 }
 
 tournamentDE<-function(a,b)
 {
-  q_a = evaluation(a)
-  q_b = evaluation(b)
-  if (q_a > q_b)
+
+  if (a$quality > b$quality)
   {
-    pt = point(a)
-    pt$quality = q_a
-    return (pt)
+    return (a)
   }
-  else
-  {
-    pt = point(b)
-    pt$quality = q_b
-    return (pt)
-  }
+  return (b)
 }
+
+# sprawdza czy punkt jest na liście zwraca 0 gdy nie ma lub pozycje na liście
+findPoint<-function(list,point)
+{
+  for (i in 1:length(list))
+  {
+    if (list[[i]]$coordinates[1] == point$coordinates[1] && list[[i]]$coordinates[2] == point$coordinates[2])
+      return (i)
+  }
+  return (0)
+}
+# sprawdza równość dwóch punktów
+equalPoint<-function(p_a,p_b)
+{
+  if (p_a$coordinates[1] == p_b$coordinates[1] && p_a$coordinates[2] == p_b$coordinates[2])
+    return (TRUE)
+  return (FALSE)
+}
+
 
 initModel<-function(history)
 {
-  return (1) # mocking
+  return (c(1:length(history)))
 }
 #### TO BE DEFINED BY THE USER
 
@@ -133,14 +162,19 @@ selection<-function(history, model) # zrobione
 {
   #select a number of points from the history using the 
   #method's parameters and the current state of the model
-  l = length(history)
-  return (history[max(l - parametersDE$S + 1,1):l])
-  
+  #l = length(history)
+  #return (history[max(l - parametersDE$S + 1,1):l])
+  selectedPoints = list()
+  for (i in 1:length(model))
+  {
+    selectedPoints = append(selectedPoints,history[model[i]])
+  }
+  return (selectedPoints)
 }
 
 #update of a model based on a LIST of points
 #to be defined
-modelUpdate<-function(selectedPoints, oldModel)
+modelUpdate<-function(selectedPoints, oldModel) # nieużywane!!
 {
   #take a look at the list of selectedPoints and 
   #on the current state of the model, update it 
@@ -149,25 +183,70 @@ modelUpdate<-function(selectedPoints, oldModel)
   return (newModel)
 }
 
-#generation of a LIST of new points
+#generation of a proposed LIST of new points
 #to be defined
-variation<-function(selectedPoints, model)
+# w tej chwili tylko lepsze punkty trafiają do loga
+variation<-function(selectedPoints,history)
 {
   newPoints = list()
   for (i in 1:parametersDE$S)
   {
-    x_j <- selectDE(selectedPoints,model)
-    x_nr = sample(1:length(selectedPoints),2) # def replace = false -> bez zwracania
-    x_a = list()
-    for (i in 1:2) 
-      x_a = append(x_a,list( selectedPoints[[x_nr[i]]]$coordinates)) # wybiera wektory współrzednych punktow
-    y = x_j + parametersDE$F*( x_a[[1]] - x_a[[2]] )
-    z = crossoverDE(selectedPoints[[i]]$coordinates,y) 
-    newPoints = append(newPoints, list(tournamentDE(selectedPoints[[i]]$coordinates,z)))# zwraca punkt!!!
+    x_j <- selectDE(selectedPoints)
+    z = NULL
+    while (!inRange(z))
+    {
+      x_nr = sample(1:length(selectedPoints),2) # def sample.replace = false -> bez zwracania
+      x_a = list()
+      for (j in 1:2) 
+      {
+        x_a = append(x_a,list( selectedPoints[[x_nr[j]]]$coordinates)) # wybiera wektory współrzednych punktow
+      }
+      y = x_j + parametersDE$F*( x_a[[1]] - x_a[[2]] )
+      #cat("point for: ",i," find: ",findPoint(history,point(y)),"\n") # DEBUG !!!!!!!!!!!!!!!!!!!!!!
+      z = crossoverDE(selectedPoints[[i]]$coordinates,y)
+      z$quality = evaluation(z$coordinates)
+    }
+    # aktualnie pty y i z nie wrzucane do loga
+    newPoints = append(newPoints,list(tournamentDE(selectedPoints[[i]],z)))# tournament zwraca punkt
+
   } 
   return (newPoints)
 }
 
+getNewModelAndPoints<-function(history,oldModel,newPoints)
+{
+  #length(oldModel) == length(newPoints)
+  returnedPoints = list()
+  for (i in 1:length(newPoints))
+  {
+    if (equalPoint(history[[oldModel[i]]],newPoints[[i]]))
+    { # takie same punkty
+      
+    }else
+    {
+      pos = findPoint(history,newPoints[[i]]) # jak != 0 to znalazlo punkt w historii
+      if (pos != 0 )
+      { # znaleziono pkt w historii - edytujemy model ale nie dodajemy punktu
+        oldModel[i] = pos
+      }
+      else
+      { # nie znaleziono pktu - edytujemy model i dopisujemy punkt do listy returned points
+        returnedPoints = append(returnedPoints, newPoints[i])
+        oldModel[i] = length(history) + length(returnedPoints)
+      }
+    }
+  }
+  return (list(newPoints=returnedPoints,newModel=oldModel))
+}
+# return for values in range, false for NULL and another values
+inRange<-function(point)
+{
+if (is.null(point))
+  return (FALSE)
+if (point$coordinates[1] <= 2 && point$coordinates[1] >= -2 && point$coordinates[2] >= -2 && point$coordinates[2] <= 2)
+  return (TRUE)
+return (FALSE)
+}
 
 #####  THE METAHEURISTIC "ENGINE"
 
@@ -177,10 +256,13 @@ variation<-function(selectedPoints, model)
 aggregatedOperator<-function(history, oldModel)
 {
   
-  selectedPoints<-selection(history, oldModel)
-  newModel<-modelUpdate(selectedPoints, oldModel)
-  newPoints<-variation(selectedPoints, newModel)
-  return (list(newPoints=newPoints,newModel=newModel)) # to "=" dodaje nam nazwy dla dostępu do poszczególnych elementów
+ selectedPoints<-selection(history, oldModel)
+ 
+ newPoints<-variation(selectedPoints,history)
+  # metoda otrzymuje listę proponowanych punktów
+  #newModel<-modelUpdate(newPoints, oldModel) # zmiana kolejności! inaczej się nie da
+  # funkcja zwracająca list(newPoints=newPoints,newModel=newModel)
+  return (getNewModelAndPoints(history, oldModel, newPoints))
 }
 
 #The main loop of a metaheuristic.
@@ -194,10 +276,12 @@ metaheuristicRun<-function(initialization, startPoints, termination, evaluation)
   history<-evaluateList(history, evaluation) # dodałem drugi parametr bo mnie to wkurzało że go nie było
   model<-initModel(history)
   while (!termination(history,model))
+    
   {
     aa<-aggregatedOperator(history, model)
-    aa$newPoints<-evaluateList(aa$newPoints, evaluation) # tu niepotrzebne bo wariancja liczy to
+    #aa$newPoints<-evaluateList(aa$newPoints, evaluation) # tu niepotrzebne bo wariancja liczy to
     history<-historyPush(history,aa$newPoints) 
+    cat("nr: ", parametersTerm$currValue , "  " , aa$newModel,"\n")
     model<-aa$newModel
   }
   parametersTerm$currValue <<- 0
