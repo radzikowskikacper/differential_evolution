@@ -61,7 +61,7 @@ bitmap_image* utils::generatePointsToBmp(int points_per_unit,
 
 	double x_value = x_left;
 	double y_value = y_bottom;
-	double x_m,y_m;
+
 	for (int x=0; x<width; ++x )
 	{
 		y_value = y_bottom;
@@ -71,11 +71,9 @@ bitmap_image* utils::generatePointsToBmp(int points_per_unit,
 
 			if (min > table[x][y])
 				min = table[x][y];
-			if (max < table[x][y]){
+			if (max < table[x][y])
 				max = table[x][y];
-				x_m = x_value;
-				y_m = y_value;
-			}
+
 			y_value += step;
 		}
 		x_value += step;
@@ -104,8 +102,6 @@ bitmap_image* utils::generatePointsToBmp(int points_per_unit,
 			<< "\nmax: " << max
 			<< "\ntop limes "<< top_limes
 			<< "\nbegin value "<< begin_value
-			<< "\nmax x: " << x_m
-			<< "\nmin x: " << y_m
 			<< "\n";
 	/**
 	 * zasada działania
@@ -124,7 +120,7 @@ bitmap_image* utils::generatePointsToBmp(int points_per_unit,
 			{
 				if ( fabs(table[x][y] - value) <= accuracy )
 				{ // dopisz punkt do bitmapy i zakoncz jego sprawdzanie
-					image->set_pixel(x,height - y-1,0,0,0);
+					image->set_pixel(x,height-y-1,0,0,0);
 
 					break;
 				}
@@ -133,10 +129,7 @@ bitmap_image* utils::generatePointsToBmp(int points_per_unit,
 			}
 		}
 	}
-//	int m = 20;
-//	for (int i = 0; i< m;++i)
-//		for (int j = 0; j< m;++j)
-//	image->set_pixel(1500 + i - int(m/2),1500 + j - int(m/2),255,68,147);
+
 	std::cout<<"koniec obliczeń\n";
 
 	// end - delete this table
