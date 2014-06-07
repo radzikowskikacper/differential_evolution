@@ -12,6 +12,8 @@
 # przypisania globalne poprzez <<- zamiast <- lub = !!
 # parametry algorytmu ewolucyjnego i metoda ustawiająca
 
+library(lattice)
+
 # history - wszystkie wygenerowane punkty
 # model - indeksy punktów aktualnego 
 parametersDE = list(S = 15, F = 0.9, CR = 0.5)
@@ -282,6 +284,8 @@ my_middle<-function(model,history)
   return ( p / length(model) )
 }
 
+shift_v = c(runif(2,-2,2))
+
 middle_points = list()
 my_model = list()
 #The main loop of a metaheuristic.
@@ -295,6 +299,7 @@ metaheuristicRun<-function(initialization, startPoints, termination, evaluation)
   history<-evaluateList(history, evaluation) # dodałem drugi parametr bo mnie to wkurzało że go nie było
   model<-initModel(history)
   
+  shift_v <<- c(runif(2,-3,3))
   middle_points <<- list()
   
   while (!termination(history,model))
