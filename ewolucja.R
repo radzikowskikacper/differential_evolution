@@ -14,7 +14,7 @@
 
 # history - wszystkie wygenerowane punkty
 # model - indeksy punktów aktualnego 
-parametersDE = list(S = 10, F = 0.9, CR = 0.5)
+parametersDE = list(S = 15, F = 0.9, CR = 0.5)
 
 # ustawia parametry metody
 setParamDE<-function(S,F,CR)
@@ -36,7 +36,7 @@ genPointGP<-function()
   return (point(runif(2, -2, 2)))
 }
 
-# funkcja oceny - na razie liczy po prostu wartość funkcji
+#funkcja oceny - na razie liczy po prostu wartość funkcji
 evaluation<-function(coordinates)
 {
   x1 = coordinates[1]#x
@@ -44,19 +44,22 @@ evaluation<-function(coordinates)
   return((1+(x1+x2+1)^2*(19-14*x1+3*x1^2-14*x2+6*x1*x2+3*x2^2))*(30+(2*x1-3*x2)^2*(18-32*x1+12*x1^2+48*x2-36*x1*x2+27*x2^2)))
 }
 
-# metoda wyswietlająca wunik w przyjazny sposób
+
+# metoda wyswietlająca wynik w przyjazny sposób
 show_output<-function(out)
 {
   a = NULL
   b = NULL
   c = NULL
+
   for (i in 1:length(out))
   {
+ 
     a[i] = out[[i]]$coordinates[1]
     b[i] = out[[i]]$coordinates[2]
     c[i] = out[[i]]$quality
   }
-  plot(a,b)
+  plot(a,b,pch=20,xlab="x (cm)",ylab="y (cm)",cex=0.75,,xlim=c(-2,2),ylim=c(-2,2))
 }
 
 # inicjalizacja wybiera n elementów z listy startowej punktów,
@@ -82,9 +85,9 @@ initialization<-function(startPoints)
 }
 
 # termination with values
-parametersTerm = list (type='repeats',value=1000, currValue = 0)
+parametersTerm = list (type='repeats',value=400, currValue = 0)
 
-termination<-function(history,model)
+terminationIter<-function(history,model)
 {# wyłączenie spr. warunku
   #if (parametersTerm$type == "repeats")
   {
@@ -96,14 +99,17 @@ termination<-function(history,model)
   return (FALSE)
 }
 
-# zwraca wylosowany (w ust sposób) wektor współrzędnych danego punktu
+# zwraca wylosowany pinkt z populacji (rozkład jednostajny)
 selectDE<-function(selectedPoints)
 {
-  # na razie zwykłe sample ale może pożniej inaczej
   l = sample(1:length(selectedPoints),1)
   return (selectedPoints[[l]]$coordinates)
 }
-# wersja dla dwóch elementów, w przyp potrzeby można zrobić dla n wymiarół
+# wersja dla dwóch elementów, w przyp potrzeby można zrobić dla n wymiarów
+# zasada działąnia:
+# - wylosuj porządek w którym będzie dokonywane losowanie elementów
+# - za ostatni element wektora podstaw element wektora mutanta (to zapewnia nam, że krzyżowanie nigdy)
+# nie zwróci nam starego punktu.
 crossoverDE<-function(old,y)
 {
   order = sample(1:length(old),length(old))
@@ -124,7 +130,7 @@ crossoverDE<-function(old,y)
 tournamentDE<-function(a,b)
 {
 
-  if (a$quality > b$quality)
+  if (a$quality < b$quality)
   {
     return (a)
   }
@@ -149,7 +155,7 @@ equalPoint<-function(p_a,p_b)
   return (FALSE)
 }
 
-
+# model zawiera numery naktórych znajdują sie elementy populacji w historii
 initModel<-function(history)
 {
   return (c(1:length(history)))
@@ -191,18 +197,17 @@ variation<-function(selectedPoints,history)
   newPoints = list()
   for (i in 1:parametersDE$S)
   {
-    x_j <- selectDE(selectedPoints)
+    x_j <- selectDE(selectedPoints) # wybierz jeden punkt
     z = NULL
     while (!inRange(z))
     {
-      x_nr = sample(1:length(selectedPoints),2) # def sample.replace = false -> bez zwracania
+      x_nr = sample(1:length(selectedPoints),2) # def sample.replace = false -> losowanie bez zwracania
       x_a = list()
       for (j in 1:2) 
       {
         x_a = append(x_a,list( selectedPoints[[x_nr[j]]]$coordinates)) # wybiera wektory współrzednych punktow
       }
       y = x_j + parametersDE$F*( x_a[[1]] - x_a[[2]] )
-      #cat("point for: ",i," find: ",findPoint(history,point(y)),"\n") # DEBUG !!!!!!!!!!!!!!!!!!!!!!
       z = crossoverDE(selectedPoints[[i]]$coordinates,y)
       z$quality = evaluation(z$coordinates)
     }
@@ -213,6 +218,8 @@ variation<-function(selectedPoints,history)
   return (newPoints)
 }
 
+# funkcja pobiera starą populację i wybrane punkty przez wariancję oraz
+# zwraca
 getNewModelAndPoints<-function(history,oldModel,newPoints)
 {
   #length(oldModel) == length(newPoints)
@@ -223,7 +230,7 @@ getNewModelAndPoints<-function(history,oldModel,newPoints)
     { # takie same punkty
       
     }else
-    {
+    { # różne, czyli nowo wygenerowane punkty są lepsze od starych na odpowiadających porównywanych pozycjach
       pos = findPoint(history,newPoints[[i]]) # jak != 0 to znalazlo punkt w historii
       if (pos != 0 )
       { # znaleziono pkt w historii - edytujemy model ale nie dodajemy punktu
@@ -265,6 +272,18 @@ aggregatedOperator<-function(history, oldModel)
   return (getNewModelAndPoints(history, oldModel, newPoints))
 }
 
+my_middle<-function(model,history)
+{
+  p = c(0,0)
+  for (i in 1:length(model))
+  {
+    p = p + history[[model[i]]]$coordinates
+  }
+  return ( p / length(model) )
+}
+
+middle_points = list()
+my_model = list()
 #The main loop of a metaheuristic.
 #The user must define a LIST of start points,
 #a termination condition, an initialization procedure
@@ -275,15 +294,22 @@ metaheuristicRun<-function(initialization, startPoints, termination, evaluation)
   history<-initialization(startPoints)
   history<-evaluateList(history, evaluation) # dodałem drugi parametr bo mnie to wkurzało że go nie było
   model<-initModel(history)
+  
+  middle_points <<- list()
+  
   while (!termination(history,model))
     
   {
     aa<-aggregatedOperator(history, model)
     #aa$newPoints<-evaluateList(aa$newPoints, evaluation) # tu niepotrzebne bo wariancja liczy to
     history<-historyPush(history,aa$newPoints) 
-    cat("nr: ", parametersTerm$currValue , "  " , aa$newModel,"\n")
+    #cat("nr: ", parametersTerm$currValue , "  " , aa$newModel,"\n")
+    cat("nr: ", parametersTerm$currValue,"\n")
     model<-aa$newModel
+    middle_points <<- append(middle_points, list(my_middle(model,history)))
   }
+  
+  my_model <<- model
   parametersTerm$currValue <<- 0
   return(history)
 }
