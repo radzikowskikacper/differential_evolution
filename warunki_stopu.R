@@ -19,7 +19,7 @@ return (FALSE)
 
 
 #evaluation(history[model[parametersQualityTerm$pos_element]]$coordinations)
-parametersQualityTerm = list( quality_step = 0.00000001 , max_iter = 20 , actual_iter = 0, saved_iter = 0 , pos_element = 1 )
+parametersQualityTerm = list( quality_step = 0.00000001 , max_iter = 100 , actual_iter = 0, saved_iter = 0 , pos_element = 1 )
 
 terminationQualityIter<-function(history,model)
 {
