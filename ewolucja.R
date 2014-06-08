@@ -299,23 +299,26 @@ metaheuristicRun<-function(initialization, startPoints, termination, evaluation)
   history<-evaluateList(history, evaluation) # dodałem drugi parametr bo mnie to wkurzało że go nie było
   model<-initModel(history)
   
-  shift_v <<- c(runif(2,-3,3))
+  shift_v <<- c(runif(2,-2,2))
   middle_points <<- list()
-  
+  parametersTerm$currValue <<- 0
+  parametersQualityTerm$actual_iter <<- 0
+  parametersQualityTerm$pos_element <<- 1
   while (!termination(history,model))
     
   {
+    middle_points <<- append(middle_points, list(my_middle(model,history)))
     aa<-aggregatedOperator(history, model)
     #aa$newPoints<-evaluateList(aa$newPoints, evaluation) # tu niepotrzebne bo wariancja liczy to
     history<-historyPush(history,aa$newPoints) 
     #cat("nr: ", parametersTerm$currValue , "  " , aa$newModel,"\n")
-    cat("nr: ", parametersTerm$currValue,"\n")
+    
     model<-aa$newModel
-    middle_points <<- append(middle_points, list(my_middle(model,history)))
   }
+  cat("nr: ", parametersTerm$currValue,"\n")
   
   my_model <<- model
-  parametersTerm$currValue <<- 0
+  
   return(history)
 }
 
